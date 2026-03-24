@@ -89,6 +89,7 @@ import {
   setBackgroundUserContext
 } from './CrashAnalytics'
 import { handleDappAccountSwitching } from './handlers/handleDappAccountSwitching'
+import { getEthUsdPrice } from '@web/libs/eth-prices/ethPriceProvider'
 
 const debugLogs: {
   key: string
@@ -356,9 +357,31 @@ function getIntervalRefreshTime(constUpdateInterval: number, newestOpTimestamp: 
       }
     }
 
-    // Use the native fetch (instead of node-fetch or whatever else) since
-    // browser extensions are designed to run within the web environment,
-    // which already provides a native and well-optimized fetch API.
+    // Intercept Cena/CoinGecko price requests and use on-chain Uniswap V3 prices
+    // for ETH instead of the centralized API (decentralized price PoC).
+    const urlStr = url.toString()
+    if (urlStr.includes('cena.ambire.com/api/v3/simple/price') && urlStr.includes('ethereum')) {
+      try {
+        const ethPrice = await getEthUsdPrice()
+        const params = new URL(urlStr).searchParams
+        const currencies = (params.get('vs_currencies') || 'usd').split(',')
+        const ids = (params.get('ids') || '').split(',')
+        const body: Record<string, Record<string, number>> = {}
+        for (const id of ids) {
+          body[id] = {}
+          for (const cur of currencies) {
+            body[id][cur] = cur === 'usd' ? ethPrice : 0
+          }
+        }
+        return new Response(JSON.stringify(body), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      } catch (e) {
+        console.warn('[eth-prices] On-chain price fetch failed, falling back to Cena:', e)
+      }
+    }
+
     // @ts-ignore
     return fetch(url, initWithCustomHeaders)
   }

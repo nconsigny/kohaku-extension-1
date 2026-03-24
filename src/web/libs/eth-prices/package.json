@@ -1,0 +1,23 @@
+{
+  "name": "eth-prices",
+  "type": "module",
+  "description": "A library for fetching Ethereum prices.",
+  "version": "0.0.2",
+  "license": "LGPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/v3xlabs/eth-prices/"
+  },
+  "files": [
+    "eth_prices_bg.wasm",
+    "eth_prices.js",
+    "eth_prices_bg.js",
+    "eth_prices.d.ts"
+  ],
+  "main": "eth_prices.js",
+  "types": "eth_prices.d.ts",
+  "sideEffects": [
+    "./eth_prices.js",
+    "./snippets/*"
+  ]
+}
