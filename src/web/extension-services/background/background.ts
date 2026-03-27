@@ -318,7 +318,7 @@ function getIntervalRefreshTime(constUpdateInterval: number, newestOpTimestamp: 
 
   // Extension-specific additional trackings
   // @ts-ignore
-  const fetchWithAnalytics: Fetch = (url, init) => {
+  const fetchWithAnalytics: Fetch = async (url, init) => {
     // As of v4.26.0, custom extension-specific headers. TBD for the other apps.
     const initWithCustomHeaders = init || { headers: { 'x-app-source': '' } }
     initWithCustomHeaders.headers = initWithCustomHeaders.headers || {}
