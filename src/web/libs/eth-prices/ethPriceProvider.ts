@@ -25,7 +25,11 @@ async function initWasm() {
   const bg = await import('./eth_prices_bg.js')
 
   // Wire WASM exports into the bg.js glue code
-  bg.__wbg_set_wasm(wasmModule)
+  // webpack asyncWebAssembly may wrap exports — try .default or direct
+  const wasmExports = wasmModule.default || wasmModule
+  console.log('[eth-prices] WASM module keys:', Object.keys(wasmModule).slice(0, 10))
+  console.log('[eth-prices] Has __wbindgen_externrefs:', '__wbindgen_externrefs' in wasmExports)
+  bg.__wbg_set_wasm(wasmExports)
 
   // Init the externref table if available
   if (typeof bg.__wbindgen_init_externref_table === 'function') {
