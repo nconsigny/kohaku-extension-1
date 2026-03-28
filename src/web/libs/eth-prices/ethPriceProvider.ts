@@ -20,18 +20,22 @@ const CACHE_TTL_MS = 60_000 // 1 minute
 let quoterPromise: Promise<any> | null = null
 
 async function initWasm() {
-  // Dynamic imports so WASM loads lazily
-  const wasmModule = await import('./eth_prices_bg.wasm')
   const bg = await import('./eth_prices_bg.js')
 
-  // Wire WASM exports into the bg.js glue code
-  // webpack asyncWebAssembly may wrap exports — try .default or direct
-  const wasmExports = wasmModule.default || wasmModule
-  console.log('[eth-prices] WASM module keys:', Object.keys(wasmModule).slice(0, 10))
-  console.log('[eth-prices] Has __wbindgen_externrefs:', '__wbindgen_externrefs' in wasmExports)
-  bg.__wbg_set_wasm(wasmExports)
+  // Webpack turns the .wasm import into a URL string at build time.
+  // We need to fetch it and instantiate manually.
+  // @ts-ignore — webpack resolves this to the emitted asset URL
+  const wasmUrl: string = (await import('./eth_prices_bg.wasm')).default || await import('./eth_prices_bg.wasm')
 
-  // Init the externref table if available
+  const wasmResponse = await fetch(wasmUrl)
+  const wasmBytes = await wasmResponse.arrayBuffer()
+
+  // Build the import object that the WASM module expects
+  const imports = { './eth_prices_bg.js': bg }
+  const { instance } = await WebAssembly.instantiate(wasmBytes, imports)
+
+  bg.__wbg_set_wasm(instance.exports)
+
   if (typeof bg.__wbindgen_init_externref_table === 'function') {
     bg.__wbindgen_init_externref_table()
   }
